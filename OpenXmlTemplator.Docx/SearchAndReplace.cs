@@ -45,31 +45,18 @@ namespace OpenXmlTemplator.Docx
                                         //Получаем следующую строку, после строки-обозначения таблицы
                                         XElement trParent = tableSignTr.ElementsAfterSelf().FirstOrDefault() ?? throw new NullReferenceException($"Не найдено шаблон-строка таблицы. Ключевое слово - {keyWord ?? "is null"}");
 
-                                        //Указатель на последний элемент, после которого и нужно добавлять новые, для сохранения порядка
-                                        XElement insertAfter = trParent;
-
-                                        //Ссылка на шаблон
-                                        XElement? trTemplate = null;
-
                                         if (rows is not null)
                                         {
                                             foreach (KeyWordsHandlerModel rowHandler in rows)
                                             {
-                                                if (trTemplate is not null)//Если мы установили шаблон, значит в самом документе строка-пример уже заменена
-                                                {
-                                                    trParent = new XElement(trTemplate);//создаем новый элемент на основе шаблона
-                                                    insertAfter.AddAfterSelf(trParent);//встявляем новый элемент
-                                                    insertAfter = trParent;//меняем ссылку на последний элемент
-                                                }
-                                                else
-                                                {
-                                                    trTemplate = new XElement(trParent);//Устанавливаем шаблон, для последующих копии
-                                                }
+                                                XElement row = new(trParent);
+                                                trParent.AddBeforeSelf(row);
 
-                                                RecursiveSearch(keyWordsHandler: rowHandler, element: trParent, search: new SearchKeyWord(searchToCopy: search), toRemove: toRemove);//Вызываем рекурсивный поиск внутри строки таблицы, SearchKeyWord задаем новое
+                                                RecursiveSearch(keyWordsHandler: rowHandler, element: row, search: new SearchKeyWord(searchToCopy: search), toRemove: toRemove);//Вызываем рекурсивный поиск внутри строки таблицы, SearchKeyWord задаем новое
                                             }
                                         }
 
+                                        toRemove.Add(trParent);
                                         toRemove.Add(tableSignTr);//Добавляем строку-обозначение в список для итогового удаления
                                     }
                                     else if (keyWordsHandler.KeyWordsToInsert.TryGetValue(keyWord, out IEnumerable<string>? data))//Проверка на множественные замены
@@ -82,15 +69,11 @@ namespace OpenXmlTemplator.Docx
                                         XElement paragraph = FindParentByXName(child: run, xName: DocxXNames.P) ?? throw new InvalidDataException($"Не найден родительский w:p блок. Ключевое слово - {keyWord ?? "is null"}"); ;
                                         XElement? pStyle = paragraph.Element(DocxXNames.pPr);
 
-                                        //Указатель на последний элемент, после которого и нужно добавлять новые, для сохранения порядка
-                                        XElement insertAfter = paragraph;
-
                                         foreach (string text in data)
                                         {
                                             XElement newParagraph = CreateParagraph(text: text, pStyle: pStyle, rStyle: rStyle);//Создаем новый параграф с указаными стилями
 
-                                            insertAfter.AddAfterSelf(newParagraph);//вставляем новый элемент
-                                            insertAfter = newParagraph;//меняем ссылку на последний элемент
+                                            paragraph.AddBeforeSelf(newParagraph);//вставляем новый элемент
                                         }
 
                                         toRemove.Add(paragraph);//удаляем параграф-обозначнение
