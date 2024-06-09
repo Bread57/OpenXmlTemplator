@@ -51,7 +51,12 @@
                             //Рекурсивный поиск по document.xml
                             foreach (var element in newBody.Elements())
                             {
-                                SearchAndReplace.RecursiveSearch(element: element, keyWordsHandler: keyWords, search: new SearchKeyWord(startingKeys: docxTemplatorModels.StartingKeys, endingKeys: docxTemplatorModels.EndingKeys), toRemove: toRemove);
+                                SearchAndReplace.RecursiveSearch(
+                                    element: element,
+                                    keyWordsHandler: keyWords,
+                                    search: new SearchKeyWord(startingKeys: docxTemplatorModels.StartingKeys, endingKeys: docxTemplatorModels.EndingKeys, keyWordParamsSeparator: docxTemplatorModels.KeyWordParamsSeparator),
+                                    toRemove: toRemove
+                                    );
                             }
 
                             //Удаляем лишние элементы
@@ -120,7 +125,12 @@
                                     //Рекурсивный поиск по document.xml
                                     foreach (var element in body.Elements())
                                     {
-                                        SearchAndReplace.RecursiveSearch(element: element, keyWordsHandler: keyWords, search: new SearchKeyWord(startingKeys: docxTemplatorModels.StartingKeys, endingKeys: docxTemplatorModels.EndingKeys), toRemove: toRemove);
+                                        SearchAndReplace.RecursiveSearch(
+                                            element: element,
+                                            keyWordsHandler: keyWords,
+                                            search: new SearchKeyWord(startingKeys: docxTemplatorModels.StartingKeys, endingKeys: docxTemplatorModels.EndingKeys, keyWordParamsSeparator: docxTemplatorModels.KeyWordParamsSeparator),
+                                            toRemove: toRemove
+                                            );
                                     }
 
                                     //Удаляем лишние элементы

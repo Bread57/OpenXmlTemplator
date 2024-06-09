@@ -32,6 +32,11 @@
         internal StringBuilder KeyWord = new();
 
         /// <summary>
+        /// Разделитель для параметров ключевого слова
+        /// </summary>
+        internal string KeyWordParamsSeparator { get; }
+
+        /// <summary>
         /// Индекс, обозначающий позицию в блоке w:t, с которой нужной удалять ключевое слово
         /// </summary>
         internal int StartIndex { get; set; }
@@ -41,10 +46,11 @@
         /// </summary>
         /// <param name="startingKeys">список обозначении начала ключевого слова</param>
         /// <param name="endingKeys">Список обозначении окончания ключевого слова</param>
-        public SearchKeyWord(char[] startingKeys, char[] endingKeys)
+        public SearchKeyWord(char[] startingKeys, char[] endingKeys, string keyWordParamsSeparator)
         {
             _startingKeys = startingKeys.Select(sk => (sk, false)).ToArray();
             _endingKeys = endingKeys.Select(ek => (ek, false)).ToArray();
+            KeyWordParamsSeparator = keyWordParamsSeparator;
         }
 
         /// <summary>
@@ -55,6 +61,7 @@
         {
             _startingKeys = searchToCopy._startingKeys.Select(sk => (sk.key, false)).ToArray();
             _endingKeys = searchToCopy._endingKeys.Select(ek => (ek.key, false)).ToArray();
+            KeyWordParamsSeparator = searchToCopy.KeyWordParamsSeparator;
         }
 
         /// <summary>

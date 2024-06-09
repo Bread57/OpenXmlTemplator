@@ -34,30 +34,54 @@ namespace OpenXmlTemplator.Docx
                                 //Проверяем, все ли конечные ключи найдены
                                 if (search.HasAllEndingKeys)
                                 {
-                                    //Получаем ключевое слово
-                                    string keyWord = search.KeyWord.ToString();
+                                    //Получаем ключевое слово и его параметры
+                                    string[] keyWordParams = search.KeyWord.ToString().Split(search.KeyWordParamsSeparator);
+
+                                    //Получаем отдельно ключевое слово
+                                    string keyWord = keyWordParams[0];
 
                                     if (keyWordsHandler.TableKeyWords.TryGetValue(keyWord, out IEnumerable<KeyWordsHandlerModel>? rows))//Проверка на замену таблицы
                                     {
-                                        //Получаем строку-обозначение таблицы
-                                        XElement tableSignTr = FindParentByXName(child: child, xName: DocxXNames.TR) ?? throw new InvalidDataException($"Не найден родительский w:tr блок-обозначение. Ключевое слово - {keyWord ?? "is null"}");
-
-                                        //Получаем следующую строку, после строки-обозначения таблицы
-                                        XElement trParent = tableSignTr.ElementsAfterSelf().FirstOrDefault() ?? throw new NullReferenceException($"Не найдено шаблон-строка таблицы. Ключевое слово - {keyWord ?? "is null"}");
-
-                                        if (rows is not null)
+                                        try
                                         {
-                                            foreach (KeyWordsHandlerModel rowHandler in rows)
-                                            {
-                                                XElement row = new(trParent);
-                                                trParent.AddBeforeSelf(row);
+                                            int tempateRowCount = keyWordParams.Length > 1 ? Convert.ToInt32(keyWordParams[1]) : 1;//если не указано число строк-шаблонов, считаем что строка одна
 
-                                                RecursiveSearch(keyWordsHandler: rowHandler, element: row, search: new SearchKeyWord(searchToCopy: search), toRemove: toRemove);//Вызываем рекурсивный поиск внутри строки таблицы, SearchKeyWord задаем новое
+                                            //Получаем строку-обозначение таблицы
+                                            XElement tableSignTr = FindParentByXName(child: child, xName: DocxXNames.TR) ?? throw new InvalidDataException($"Не найден родительский w:tr блок-обозначение. Ключевое слово - {keyWord ?? "is null"}");
+                                            toRemove.Add(tableSignTr);//Добавляем строку-обозначение в список для итогового удаления
+
+                                            //Получаем список строк-шаблонов, идущих после строки-обозначения таблицы
+                                            //Обязательно Вызывакм To(Array/List и т.д.) для кэширования результата запроса, т.к. иначе изменения древа xml(вставки новых элементов) будут отражаться на этой коллекции, если оставим Ienumerable
+                                            XElement[] trTemplates = tableSignTr.ElementsAfterSelf().Take(tempateRowCount).ToArray() ?? throw new NullReferenceException($"Не найдено шаблон-строка таблицы. Ключевое слово - {keyWord ?? "is null"}");
+
+                                            //Берем первую строку шаблон для вставки новыз элементов перед ней
+                                            XElement insertBefore = trTemplates.FirstOrDefault() ?? throw new InvalidDataException($"Не указаны шаблоны строк в таблице. Ключевое слово - {keyWord ?? " is null"}");
+
+                                            //Добавляем шаблоны с писок на удаление
+                                            foreach (XElement templateRow in trTemplates)
+                                            {
+                                                toRemove.Add(templateRow);
+                                            }
+
+
+                                            if (rows is not null)
+                                            {
+                                                foreach (KeyWordsHandlerModel rowHandler in rows)
+                                                {
+                                                    foreach (XElement templateRow in trTemplates)
+                                                    {
+                                                        XElement row = new(templateRow);
+                                                        insertBefore.AddBeforeSelf(row);
+
+                                                        RecursiveSearch(keyWordsHandler: rowHandler, element: row, search: new SearchKeyWord(searchToCopy: search), toRemove: toRemove);//Вызываем рекурсивный поиск внутри строки таблицы, SearchKeyWord задаем новое
+                                                    }
+                                                }
                                             }
                                         }
-
-                                        toRemove.Add(trParent);
-                                        toRemove.Add(tableSignTr);//Добавляем строку-обозначение в список для итогового удаления
+                                        catch (FormatException ex)
+                                        {
+                                            throw new FormatException("неудалось привести параметр 'число строк шаблонов' к int", ex);
+                                        }
                                     }
                                     else if (keyWordsHandler.KeyWordsToInsert.TryGetValue(keyWord, out IEnumerable<string>? data))//Проверка на множественные замены
                                     {
