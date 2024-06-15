@@ -1,11 +1,11 @@
-﻿namespace OpenXmlTemplator.Docx.Models
+﻿namespace OpenXmlTemplator.Docx.Auxiliary
 {
     using System.Xml.Linq;
 
     /// <summary>
     /// Стандартные элементы docx документа
     /// </summary>
-    internal static class DocxCommonElements
+    internal static class CommonElementsDocx
     {
         /// <summary>
         /// Разрыв страницы
@@ -14,12 +14,12 @@
         {
             get
             {
-                return new(DocxXNames.P,
-                        new XElement(DocxXNames.R,
-                            new XElement(DocxXNames.BR,new XAttribute(DocxXNames.Type, "page"))
+                return new(XNamesDocx.P,
+                        new XElement(XNamesDocx.R,
+                            new XElement(XNamesDocx.BR, new XAttribute(XNamesDocx.Type, "page"))
                     )
                 );
             }
-        } 
+        }
     }
 }

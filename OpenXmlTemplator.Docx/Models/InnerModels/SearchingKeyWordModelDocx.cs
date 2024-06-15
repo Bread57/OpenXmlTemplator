@@ -1,12 +1,13 @@
-﻿namespace OpenXmlTemplator.Docx.Models
+﻿namespace OpenXmlTemplator.Docx.Models.InnerModels
 {
     using System;
     using System.Text;
+    using OpenXmlTemplator.Docx.Models.OuterModels;
 
     /// <summary>
     /// Класс для поиска ключевых слов в разным элементах(узлах)
     /// </summary>
-    internal class SearchKeyWord
+    internal class SearchingKeyWordModelDocx
     {
         /// <summary>
         /// Набор ключей для обозначения начала ключевого слова
@@ -34,7 +35,7 @@
         /// <summary>
         /// Разделитель для параметров ключевого слова
         /// </summary>
-        internal string KeyWordParamsSeparator { get; }
+        internal AdditionalParametersDocx AdditionalParameters { get; }
 
         /// <summary>
         /// Индекс, обозначающий позицию в блоке w:t, с которой нужной удалять ключевое слово
@@ -46,22 +47,33 @@
         /// </summary>
         /// <param name="startingKeys">список обозначении начала ключевого слова</param>
         /// <param name="endingKeys">Список обозначении окончания ключевого слова</param>
-        public SearchKeyWord(char[] startingKeys, char[] endingKeys, string keyWordParamsSeparator)
+        public SearchingKeyWordModelDocx(char[] startingKeys, char[] endingKeys, AdditionalParametersDocx additionalParameters)
         {
             _startingKeys = startingKeys.Select(sk => (sk, false)).ToArray();
             _endingKeys = endingKeys.Select(ek => (ek, false)).ToArray();
-            KeyWordParamsSeparator = keyWordParamsSeparator;
+            AdditionalParameters = additionalParameters;
+        }
+
+        /// <summary>
+        /// Копирует поисковые параметры из специальной модели
+        /// </summary>
+        /// <param name="searchModel"></param>
+        public SearchingKeyWordModelDocx(SearchModelDocx searchModel)
+        {
+            _startingKeys = searchModel.StartingKeys.Select(sk => (sk, false)).ToArray();
+            _endingKeys = searchModel.EndingKeys.Select(ek => (ek, false)).ToArray();
+            AdditionalParameters = searchModel.AdditionalParameters;
         }
 
         /// <summary>
         /// Копирует поисковые параметры
         /// </summary>
         /// <param name="searchToCopy"></param>
-        public SearchKeyWord(SearchKeyWord searchToCopy)
+        public SearchingKeyWordModelDocx(SearchingKeyWordModelDocx searchToCopy)
         {
             _startingKeys = searchToCopy._startingKeys.Select(sk => (sk.key, false)).ToArray();
             _endingKeys = searchToCopy._endingKeys.Select(ek => (ek.key, false)).ToArray();
-            KeyWordParamsSeparator = searchToCopy.KeyWordParamsSeparator;
+            AdditionalParameters = searchToCopy.AdditionalParameters;
         }
 
         /// <summary>

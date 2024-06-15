@@ -1,6 +1,8 @@
 ﻿namespace OpenXmlTemplator.Docx
 {
-    using OpenXmlTemplator.Docx.Models;
+    using OpenXmlTemplator.Docx.Auxiliary;
+    using OpenXmlTemplator.Docx.Models.InnerModels;
+    using OpenXmlTemplator.Docx.Models.OuterModels;
     using System.Collections.ObjectModel;
     using System.IO.Compression;
     using System.Xml.Linq;
@@ -8,7 +10,7 @@
     /// <summary>
     /// Варианты создания документов
     /// </summary>
-    public class CreatingDocument
+    public class CreatingDocumentDocx
     {
         private const string _docxExtension = ".docx";
 
@@ -16,7 +18,7 @@
         /// Создание объеденных документов, т.е. много документов в одном docx файле
         /// </summary>
         /// <returns></returns>
-        public byte[] MergedDocuments(DocxDocumentModel docxTemplatorModels)
+        public byte[] MergedDocuments(DocumentModelDocx docxTemplatorModels)
         {
             using (MemoryStream docxStream = new())//Поток для итогового документа
             {
@@ -37,11 +39,11 @@
                             throw new FileNotFoundException("В XML файле отсутствует корневой элемент <document>.");
                         }
 
-                        XElement body = document.Root!.Element(DocxXNames.Body) ?? throw new FileNotFoundException("В XML файле отсутствует элемент <body>.");
+                        XElement body = document.Root!.Element(XNamesDocx.Body) ?? throw new FileNotFoundException("В XML файле отсутствует элемент <body>.");
 
                         int count = docxTemplatorModels.Documents.Count();
 
-                        foreach ((string documentName, KeyWordsHandlerModel keyWords) in docxTemplatorModels.Documents)
+                        foreach ((string documentName, KeyWordsHandlerModelDocx keyWords) in docxTemplatorModels.Documents)
                         {
                             //Что бы шаблон всегда был по рукой - создаем копию newBody
                             XElement newBody = new(body);
@@ -51,10 +53,10 @@
                             //Рекурсивный поиск по document.xml
                             foreach (var element in newBody.Elements())
                             {
-                                SearchAndReplace.RecursiveSearch(
+                                SearchAndReplaceDocx.RecursiveSearch(
                                     element: element,
                                     keyWordsHandler: keyWords,
-                                    search: new SearchKeyWord(startingKeys: docxTemplatorModels.StartingKeys, endingKeys: docxTemplatorModels.EndingKeys, keyWordParamsSeparator: docxTemplatorModels.KeyWordParamsSeparator),
+                                    search: new SearchingKeyWordModelDocx(docxTemplatorModels.SearchModel),
                                     toRemove: toRemove
                                     );
                             }
@@ -70,7 +72,7 @@
                             //Не добавляем разрыв за последним документов
                             if (--count > 0)
                             {
-                                newBody.AddAfterSelf(DocxCommonElements.PageBreak);
+                                newBody.AddAfterSelf(CommonElementsDocx.PageBreak);
                             }
                         }
 
@@ -89,13 +91,13 @@
         /// Создание раздельных документов, т.е. на каждого студента свои docx файл
         /// </summary>
         /// <returns></returns>
-        public byte[] SeparateDocuments(DocxDocumentModel docxTemplatorModels)
+        public byte[] SeparateDocuments(DocumentModelDocx docxTemplatorModels)
         {
             using (MemoryStream zipStream = new())//Поток для итогового документа
             {
                 using (ZipArchive zip = new(stream: zipStream, mode: ZipArchiveMode.Update))//собираем все docx файлы в архив
                 {
-                    foreach ((string documentName, KeyWordsHandlerModel keyWords) in docxTemplatorModels.Documents)
+                    foreach ((string documentName, KeyWordsHandlerModelDocx keyWords) in docxTemplatorModels.Documents)
                     {
                         using (MemoryStream docxStream = new())//поток для записи docx файла в rar архив
                         {
@@ -118,17 +120,17 @@
                                         throw new FileNotFoundException("В XML файле отсутствует корневой элемент <document>.");
                                     }
 
-                                    XElement body = document.Root!.Element(DocxXNames.Body) ?? throw new FileNotFoundException("В XML файле отсутствует элемент <body>.");
+                                    XElement body = document.Root!.Element(XNamesDocx.Body) ?? throw new FileNotFoundException("В XML файле отсутствует элемент <body>.");
 
                                     ICollection<XElement> toRemove = new Collection<XElement>();
 
                                     //Рекурсивный поиск по document.xml
                                     foreach (var element in body.Elements())
                                     {
-                                        SearchAndReplace.RecursiveSearch(
+                                        SearchAndReplaceDocx.RecursiveSearch(
                                             element: element,
                                             keyWordsHandler: keyWords,
-                                            search: new SearchKeyWord(startingKeys: docxTemplatorModels.StartingKeys, endingKeys: docxTemplatorModels.EndingKeys, keyWordParamsSeparator: docxTemplatorModels.KeyWordParamsSeparator),
+                                            search: new SearchingKeyWordModelDocx(docxTemplatorModels.SearchModel),
                                             toRemove: toRemove
                                             );
                                     }

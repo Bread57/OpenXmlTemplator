@@ -1,8 +1,8 @@
-﻿namespace OpenXmlTemplator.Docx.Models
+﻿namespace OpenXmlTemplator.Docx.Auxiliary
 {
     using System.Xml.Linq;
 
-    internal static class DocxXNames
+    internal static class XNamesDocx
     {
         #region Имена элементов docx
         internal static readonly XNamespace Scheme = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";

@@ -1,4 +1,4 @@
-﻿namespace OpenXmlTemplator.Docx.Models
+﻿namespace OpenXmlTemplator.Docx.Models.OuterModels
 {
     using System;
     using System.Collections.Generic;
@@ -6,9 +6,9 @@
     /// <summary>
     /// Набор коллекции ключевых слов
     /// </summary>
-    public class KeyWordsHandlerModel
+    public class KeyWordsHandlerModelDocx
     {
-        public KeyWordsHandlerModel(string keyWordHandlerNotFoundMessage)
+        public KeyWordsHandlerModelDocx(string keyWordHandlerNotFoundMessage)
         {
             KeyWordHandlerNotFoundMessage = keyWordHandlerNotFoundMessage;
         }
@@ -31,6 +31,6 @@
         /// <summary>
         /// Наборы для таблиц, таблицы для нас, все равно что отдельный документ, поэтому для его обработки нужны свои коллекции ключевых слов
         /// </summary>
-        public IDictionary<string, IEnumerable<KeyWordsHandlerModel>> TableKeyWords { get; set; } = new Dictionary<string, IEnumerable<KeyWordsHandlerModel>>(StringComparer.OrdinalIgnoreCase);
+        public IDictionary<string, IEnumerable<KeyWordsHandlerModelDocx>> TableKeyWords { get; set; } = new Dictionary<string, IEnumerable<KeyWordsHandlerModelDocx>>(StringComparer.OrdinalIgnoreCase);
     }
 }
