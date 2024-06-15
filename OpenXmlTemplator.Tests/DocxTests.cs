@@ -1,5 +1,5 @@
 ﻿using OpenXmlTemplator.Docx;
-using OpenXmlTemplator.Docx.Models;
+using OpenXmlTemplator.Docx.Models.OuterModels;
 
 namespace OpenXmlTemplator.Tests
 {
@@ -8,7 +8,16 @@ namespace OpenXmlTemplator.Tests
         [Fact]
         internal void TestReplace()
         {
-            KeyWordsHandlerModel keyWords1 = new(keyWordHandlerNotFoundMessage: "Not found")
+            string templatesDirectory = Path.Combine(Directory.GetCurrentDirectory(), "DocxTestTemplates");
+
+            if (!Directory.Exists(templatesDirectory))
+            {
+                Directory.CreateDirectory(templatesDirectory);
+            }
+
+            using FileStream readStream = new(Path.Combine(templatesDirectory, "TestReplace.docx"), FileMode.Open);
+
+            KeyWordsHandlerModelDocx keyWords1 = new(keyWordHandlerNotFoundMessage: "Not found")
             {
                 KeyWordsToReplace = new Dictionary<string, string>
                 {
@@ -21,20 +30,20 @@ namespace OpenXmlTemplator.Tests
                     { "yourself","WHETHER IN AN ACTION OF CONTRACT"},
                 },
             };
-            KeyWordsHandlerModel keyWords2 = new(keyWordHandlerNotFoundMessage: "Not found")
+            KeyWordsHandlerModelDocx keyWords2 = new(keyWordHandlerNotFoundMessage: "Not found")
             {
                 KeyWordsToReplace = new Dictionary<string, string>
                 {
                     { "License","MIT? the? License?"},
                     { "Who?","holders? copyright?"},
                     { "You","to? deal? in? the? Software? without? restriction?"},
-                    { "define","and/or sell? copies? of? the? Software?"},
+                    { "define",""},
                     { "the","above? copyright? notice?"},
                     { "keywords","INCLUDING? BUT? NOT? LIMITED?"},
                     { "yourself","WHETHER? IN? AN? ACTION? OF? CONTRACT?"},
                 },
             };
-            KeyWordsHandlerModel keyWords3 = new(keyWordHandlerNotFoundMessage: "Not found")
+            KeyWordsHandlerModelDocx keyWords3 = new(keyWordHandlerNotFoundMessage: "Not found")
             {
                 KeyWordsToReplace = new Dictionary<string, string>
                 {
@@ -48,18 +57,32 @@ namespace OpenXmlTemplator.Tests
                 },
             };
 
-            string templatesDirectory = Path.Combine(Directory.GetCurrentDirectory(), "DocxTestTemplates");
-
-            if (!Directory.Exists(templatesDirectory))
+            Dictionary<string, Func<string, string, string>> handlers = new(StringComparer.OrdinalIgnoreCase)
             {
-                Directory.CreateDirectory(templatesDirectory);
-            }
+                {"default", (string word, string param) =>
+                    {
+                        return string.IsNullOrEmpty(word) ? param : word;
+                    }
+                },
 
-            using FileStream readStream = new(Path.Combine(templatesDirectory, "TestReplace.docx"), FileMode.Open);
+                {"replace", (string word, string param) =>
+                    {
+                        string[] split = param.Split("_");
 
-            DocxDocumentModel model = new(inStream: readStream, keyWordsCollection: [keyWords1, keyWords2, keyWords3], startingKeys: ['[', '#'], endingKeys: ['#', ']'], keyWordParamsSeparator: ":");
+                        string needReplace = split[0];
 
-            CreatingDocument creatingDocument = new();
+                        string newValue = split[1];
+
+                        return word.Replace(needReplace, newValue);
+                    }
+                }
+            };
+
+            SearchModelDocx searchModel = new(startingKeys: ['[', '#'], endingKeys: ['#', ']'], additionalParameters: new AdditionalParametersDocx(keyWordSeparator: "%", parameterSeparator: ":", handlers: handlers));
+
+            DocumentModelDocx model = new(inStream: readStream, documents: [("we", keyWords1), ("are", keyWords2), ("the", keyWords3)], searchModel: searchModel);
+
+            CreatingDocumentDocx creatingDocument = new();
 
             string resultsDirectory = Path.Combine(Directory.GetCurrentDirectory(), "DocxTestResults");
 
@@ -82,7 +105,16 @@ namespace OpenXmlTemplator.Tests
         [Fact]
         internal void TestInsertParagraph()
         {
-            KeyWordsHandlerModel keyWords1 = new(keyWordHandlerNotFoundMessage: "Not found")
+            string templatesDirectory = Path.Combine(Directory.GetCurrentDirectory(), "DocxTestTemplates");
+
+            if (!Directory.Exists(templatesDirectory))
+            {
+                Directory.CreateDirectory(templatesDirectory);
+            }
+
+            using FileStream readStream = new(Path.Combine(templatesDirectory, "TestInsertParagraph.docx"), FileMode.Open);
+
+            KeyWordsHandlerModelDocx keyWords = new(keyWordHandlerNotFoundMessage: "Not found")
             {
                 KeyWordsToReplace = new Dictionary<string, string>
                 {
@@ -101,18 +133,20 @@ namespace OpenXmlTemplator.Tests
                 }
             };
 
-            string templatesDirectory = Path.Combine(Directory.GetCurrentDirectory(), "DocxTestTemplates");
-
-            if (!Directory.Exists(templatesDirectory))
+            Dictionary<string, Func<string, string, string>> handlers = new(StringComparer.OrdinalIgnoreCase)
             {
-                Directory.CreateDirectory(templatesDirectory);
-            }
+                {"DeleteLastChar", (string word, string param) =>
+                    {
+                        return word.Remove(word.Length-1);
+                    }
+                },
+            };
 
-            using FileStream readStream = new(Path.Combine(templatesDirectory, "TestInsertParagraph.docx"), FileMode.Open);
+            SearchModelDocx searchModel = new(startingKeys: ['[', '#'], endingKeys: ['#', ']'], additionalParameters: new AdditionalParametersDocx(keyWordSeparator: "%", parameterSeparator: ":", handlers: handlers));
 
-            DocxDocumentModel model = new(inStream: readStream, keyWordsCollection: [keyWords1], startingKeys: ['[', '#'], endingKeys: ['#', ']'], keyWordParamsSeparator: ":");
+            DocumentModelDocx model = new(inStream: readStream, keyWords: keyWords, searchModel: searchModel);
 
-            CreatingDocument creatingDocument = new();
+            CreatingDocumentDocx creatingDocument = new();
 
             string resultsDirectory = Path.Combine(Directory.GetCurrentDirectory(), "DocxTestResults");
 
@@ -129,7 +163,16 @@ namespace OpenXmlTemplator.Tests
         [Fact]
         internal void TestTable()
         {
-            KeyWordsHandlerModel keyWords1 = new(keyWordHandlerNotFoundMessage: "Not found")
+            string templatesDirectory = Path.Combine(Directory.GetCurrentDirectory(), "DocxTestTemplates");
+
+            if (!Directory.Exists(templatesDirectory))
+            {
+                Directory.CreateDirectory(templatesDirectory);
+            }
+
+            using FileStream readStream = new(Path.Combine(templatesDirectory, "TestTable.docx"), FileMode.Open);
+
+            KeyWordsHandlerModelDocx keyWords = new(keyWordHandlerNotFoundMessage: "Not found")
             {
                 KeyWordsToReplace = new Dictionary<string, string>
                 {
@@ -146,11 +189,11 @@ namespace OpenXmlTemplator.Tests
                     { "You can", ["use", "copy", "modify", "merge", "publish", "distribute", "sublicense"] },
                     { "Other insert example",["THE SOFTWARE IS PROVIDED “AS IS”", "WITHOUT WARRANTY OF ANY KIND"]}
                 },
-                TableKeyWords = new Dictionary<string, IEnumerable<KeyWordsHandlerModel>>
+                TableKeyWords = new Dictionary<string, IEnumerable<KeyWordsHandlerModelDocx>>
                 {
                     {"Table",
                         [
-                            new KeyWordsHandlerModel(keyWordHandlerNotFoundMessage: "Not found")
+                            new KeyWordsHandlerModelDocx(keyWordHandlerNotFoundMessage: "Not found")
                             {
                                 KeyWordsToReplace = new Dictionary<string, string>
                                 {
@@ -182,7 +225,7 @@ namespace OpenXmlTemplator.Tests
                                     { "m","mmmmmmmmmm"},
                                 },
                             },
-                            new KeyWordsHandlerModel(keyWordHandlerNotFoundMessage: "Not found")
+                            new KeyWordsHandlerModelDocx(keyWordHandlerNotFoundMessage: "Not found")
                             {
                                 KeyWordsToReplace = new Dictionary<string, string>
                                 {
@@ -214,7 +257,7 @@ namespace OpenXmlTemplator.Tests
                                     { "m","*mmmmmmmmmm"},
                                 },
                             },
-                             new KeyWordsHandlerModel(keyWordHandlerNotFoundMessage: "Not found")
+                             new KeyWordsHandlerModelDocx(keyWordHandlerNotFoundMessage: "Not found")
                             {
                                 KeyWordsToReplace = new Dictionary<string, string>
                                 {
@@ -251,18 +294,11 @@ namespace OpenXmlTemplator.Tests
                 }
             };
 
-            string templatesDirectory = Path.Combine(Directory.GetCurrentDirectory(), "DocxTestTemplates");
+            SearchModelDocx searchModel = new(startingKeys: ['[', '#'], endingKeys: ['#', ']']);
 
-            if (!Directory.Exists(templatesDirectory))
-            {
-                Directory.CreateDirectory(templatesDirectory);
-            }
+            DocumentModelDocx model = new(inStream: readStream, keyWords: keyWords, searchModel: searchModel);
 
-            using FileStream readStream = new(Path.Combine(templatesDirectory, "TestTable.docx"), FileMode.Open);
-
-            DocxDocumentModel model = new(inStream: readStream, keyWordsCollection: [keyWords1], startingKeys: ['[', '#'], endingKeys: ['#', ']'], keyWordParamsSeparator: ":");
-
-            CreatingDocument creatingDocument = new();
+            CreatingDocumentDocx creatingDocument = new();
 
             string resultsDirectory = Path.Combine(Directory.GetCurrentDirectory(), "DocxTestResults");
 

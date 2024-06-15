@@ -1,4 +1,6 @@
-﻿using OpenXmlTemplator.Docx.Models;
+﻿using OpenXmlTemplator.Docx.Auxiliary;
+using OpenXmlTemplator.Docx.Models.InnerModels;
+using OpenXmlTemplator.Docx.Models.OuterModels;
 using System.Xml.Linq;
 
 namespace OpenXmlTemplator.Docx
@@ -6,20 +8,20 @@ namespace OpenXmlTemplator.Docx
     /// <summary>
     /// Поиск и замена ключевых слов
     /// </summary>
-    internal class SearchAndReplace
+    internal class SearchAndReplaceDocx
     {
         /// <summary>
         /// Рекурсивный перебор двера xml, для поиска и замены ключевых слов
         /// </summary>
-        /// <param name="keyWords">Коллекции ключевых слов для замены</param>
+        /// <param name="keyWordsHandler">Коллекции ключевых слов для замены</param>
         /// <param name="element">Элемент, дочерние узлы которого будет перебирать</param>
         /// <param name="search">Состояние поиска</param>
         /// <param name="toRemove">элементы, которые будут удаленны в конце</param>
-        internal static void RecursiveSearch(XElement element, KeyWordsHandlerModel keyWordsHandler, SearchKeyWord search, ICollection<XElement> toRemove)
+        internal static void RecursiveSearch(XElement element, KeyWordsHandlerModelDocx keyWordsHandler, SearchingKeyWordModelDocx search, ICollection<XElement> toRemove)
         {
             foreach (XElement child in element.Elements())
             {
-                if (child.Name == DocxXNames.T)
+                if (child.Name == XNamesDocx.T)
                 {
                     for (int i = 0; i < child.Value.Length; i++)
                     {
@@ -35,19 +37,21 @@ namespace OpenXmlTemplator.Docx
                                 if (search.HasAllEndingKeys)
                                 {
                                     //Получаем ключевое слово и его параметры
-                                    string[] keyWordParams = search.KeyWord.ToString().Split(search.KeyWordParamsSeparator);
+                                    string[] keyWordParams = search.KeyWord.ToString().Split(search.AdditionalParameters.KeyWordSeparator);
 
                                     //Получаем отдельно ключевое слово
                                     string keyWord = keyWordParams[0];
 
-                                    if (keyWordsHandler.TableKeyWords.TryGetValue(keyWord, out IEnumerable<KeyWordsHandlerModel>? rows))//Проверка на замену таблицы
+                                    keyWordParams = keyWordParams.Skip(1).ToArray();
+
+                                    if (keyWordsHandler.TableKeyWords.TryGetValue(keyWord, out IEnumerable<KeyWordsHandlerModelDocx>? rows))//Проверка на замену таблицы
                                     {
                                         try
                                         {
-                                            int tempateRowCount = keyWordParams.Length > 1 ? Convert.ToInt32(keyWordParams[1]) : 1;//если не указано число строк-шаблонов, считаем что строка одна
+                                            int tempateRowCount = keyWordParams.Length != 0 ? Convert.ToInt32(keyWordParams[0]) : 1;//если не указано число строк-шаблонов, считаем что строка одна
 
                                             //Получаем строку-обозначение таблицы
-                                            XElement tableSignTr = FindParentByXName(child: child, xName: DocxXNames.TR) ?? throw new InvalidDataException($"Не найден родительский w:tr блок-обозначение. Ключевое слово - {keyWord ?? "is null"}");
+                                            XElement tableSignTr = FindParentByXName(child: child, xName: XNamesDocx.TR) ?? throw new InvalidDataException($"Не найден родительский w:tr блок-обозначение. Ключевое слово - {keyWord ?? "is null"}");
                                             toRemove.Add(tableSignTr);//Добавляем строку-обозначение в список для итогового удаления
 
                                             //Получаем список строк-шаблонов, идущих после строки-обозначения таблицы
@@ -63,39 +67,38 @@ namespace OpenXmlTemplator.Docx
                                                 toRemove.Add(templateRow);
                                             }
 
-
                                             if (rows is not null)
                                             {
-                                                foreach (KeyWordsHandlerModel rowHandler in rows)
+                                                foreach (KeyWordsHandlerModelDocx rowHandler in rows)
                                                 {
                                                     foreach (XElement templateRow in trTemplates)
                                                     {
                                                         XElement row = new(templateRow);
                                                         insertBefore.AddBeforeSelf(row);
 
-                                                        RecursiveSearch(keyWordsHandler: rowHandler, element: row, search: new SearchKeyWord(searchToCopy: search), toRemove: toRemove);//Вызываем рекурсивный поиск внутри строки таблицы, SearchKeyWord задаем новое
+                                                        RecursiveSearch(keyWordsHandler: rowHandler, element: row, search: new SearchingKeyWordModelDocx(searchToCopy: search), toRemove: toRemove);//Вызываем рекурсивный поиск внутри строки таблицы, SearchKeyWord задаем новое
                                                     }
                                                 }
                                             }
                                         }
                                         catch (FormatException ex)
                                         {
-                                            throw new FormatException("неудалось привести параметр 'число строк шаблонов' к int", ex);
+                                            throw new FormatException("Не удалось привести параметр 'число строк шаблонов' к int", ex);
                                         }
                                     }
                                     else if (keyWordsHandler.KeyWordsToInsert.TryGetValue(keyWord, out IEnumerable<string>? data))//Проверка на множественные замены
                                     {
                                         //Получем строку и ее стиль
-                                        XElement run = FindParentByXName(child: child, xName: DocxXNames.R) ?? throw new InvalidDataException($"Не найден родительский w:r блок. Ключевое слово - {keyWord ?? "is null"}");
-                                        XElement? rStyle = run.Element(DocxXNames.rPr);
+                                        XElement run = FindParentByXName(child: child, xName: XNamesDocx.R) ?? throw new InvalidDataException($"Не найден родительский w:r блок. Ключевое слово - {keyWord ?? "is null"}");
+                                        XElement? rStyle = run.Element(XNamesDocx.rPr);
 
                                         //Получаем параграф-обозначение и его стиль
-                                        XElement paragraph = FindParentByXName(child: run, xName: DocxXNames.P) ?? throw new InvalidDataException($"Не найден родительский w:p блок. Ключевое слово - {keyWord ?? "is null"}"); ;
-                                        XElement? pStyle = paragraph.Element(DocxXNames.pPr);
+                                        XElement paragraph = FindParentByXName(child: run, xName: XNamesDocx.P) ?? throw new InvalidDataException($"Не найден родительский w:p блок. Ключевое слово - {keyWord ?? "is null"}"); ;
+                                        XElement? pStyle = paragraph.Element(XNamesDocx.pPr);
 
                                         foreach (string text in data)
                                         {
-                                            XElement newParagraph = CreateParagraph(text: text, pStyle: pStyle, rStyle: rStyle);//Создаем новый параграф с указаными стилями
+                                            XElement newParagraph = CreateParagraph(text: ApplyingParameters(search.AdditionalParameters, text, keyWordParams), pStyle: pStyle, rStyle: rStyle);//Создаем новый параграф с указаными стилями
 
                                             paragraph.AddBeforeSelf(newParagraph);//вставляем новый элемент
                                         }
@@ -112,14 +115,19 @@ namespace OpenXmlTemplator.Docx
 
                                         if (keyWordsHandler.KeyWordsToReplace.TryGetValue(keyWord, out string? replaceValue))//Проверка на простую замену
                                         {
-                                            //Вставляем значение в индекс ключевого слова
-                                            child.Value = child.Value.Insert(startIndex, replaceValue);
+                                            if (keyWordParams.Length > 0)
+                                            {
+                                                replaceValue = ApplyingParameters(search.AdditionalParameters, replaceValue, keyWordParams);
+                                            }
                                         }
-                                        else//Если для ключевого слова нет обработчика - выводим оставляем предупредение на документе
+                                        else//Если для ключевого слова нет обработчика - оставляем предупреждение на его месте
                                         {
                                             //Вставляем значение в индекс ключевого слова
-                                            child.Value = child.Value.Insert(startIndex, $"{keyWordsHandler.KeyWordHandlerNotFoundMessage}: {keyWord}");
+                                            replaceValue = $"{keyWordsHandler.KeyWordHandlerNotFoundMessage}: {keyWord}";
                                         }
+
+                                        //Вставляем значение в индекс ключевого слова
+                                        child.Value = child.Value.Insert(startIndex, replaceValue);
 
                                         //Ставим переменной цикла индекс ключевого слова, что бы захватить все возможные ключевые слова
                                         i = startIndex;
@@ -160,6 +168,28 @@ namespace OpenXmlTemplator.Docx
         }
 
         /// <summary>
+        /// Примененение параметров к замененному слову
+        /// </summary>
+        /// <param name="additionalParameters"></param>
+        /// <param name="replaceValue"></param>
+        /// <param name="keyWordParameters"></param>
+        /// <returns></returns>
+        private static string ApplyingParameters(AdditionalParametersDocx additionalParameters, string replaceValue, params string[] keyWordParameters)
+        {
+            foreach (string param in keyWordParameters)
+            {
+                string[] splitParam = param.Split(separator: additionalParameters.ParameterSeparator);
+
+                if (additionalParameters.Handlers.TryGetValue(splitParam[0], out Func<string, string, string>? handler))
+                {
+                    replaceValue = handler!.Invoke(replaceValue, splitParam.Length > 1 ? splitParam[1] : string.Empty);
+                }
+            }
+
+            return replaceValue;
+        }
+
+        /// <summary>
         /// Обход древа элемента, пока не найдем родительский класс с нужным именем
         /// </summary>
         /// <param name="child">Дочерний элемент, для которого ищем родителя</param>
@@ -184,8 +214,8 @@ namespace OpenXmlTemplator.Docx
         /// <returns></returns>
         private static XElement CreateParagraph(string text, XElement? pStyle, XElement? rStyle)
         {
-            return new XElement(DocxXNames.P,
-                pStyle is not null && pStyle.Name == DocxXNames.pPr ? new XElement(pStyle) : null,
+            return new XElement(XNamesDocx.P,
+                pStyle is not null && pStyle.Name == XNamesDocx.pPr ? new XElement(pStyle) : null,
                 CreateRow(text: text, rStyle: rStyle));
         }
 
@@ -197,9 +227,9 @@ namespace OpenXmlTemplator.Docx
         /// <returns></returns>
         private static XElement CreateRow(string text, XElement? rStyle)
         {
-            return new XElement(DocxXNames.R,
-                 rStyle is not null && rStyle.Name == DocxXNames.rPr ? new XElement(rStyle) : null, //если стиль не передан, или имя элемента не совпадает с принятой docx схемой - опускаем указание стиля
-                 new XElement(DocxXNames.T, text));
+            return new XElement(XNamesDocx.R,
+                 rStyle is not null && rStyle.Name == XNamesDocx.rPr ? new XElement(rStyle) : null, //если стиль не передан, или имя элемента не совпадает с принятой docx схемой - опускаем указание стиля
+                 new XElement(XNamesDocx.T, text));
         }
     }
 }
