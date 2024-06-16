@@ -1,9 +1,21 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<Title>OpenXmlTemplator.Docx</Title>
+		<PackageId>OpenXmlTemplator.Docx</PackageId>
+	</PropertyGroup>
 
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+	<PropertyGroup>
+		<Version>1.0.4</Version>
 
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		
+		<Title>OpenXmlTemplator.Docx</Title>
+		<PackageId>OpenXmlTemplator.Docx</PackageId>
+		<PackageDescription>Templator for docx, more details at GitHub</PackageDescription>
+		<RepositoryUrl>https://github.com/Bread57/OpenXmlTemplator</RepositoryUrl>
+	</PropertyGroup>
 </Project>

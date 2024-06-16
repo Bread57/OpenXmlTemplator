@@ -10,7 +10,7 @@
     /// <summary>
     /// Варианты создания документов
     /// </summary>
-    public class CreatingDocumentDocx
+    public static class CreatingDocumentDocx
     {
         private const string _docxExtension = ".docx";
 
@@ -18,7 +18,7 @@
         /// Создание объеденных документов, т.е. много документов в одном docx файле
         /// </summary>
         /// <returns></returns>
-        public byte[] MergedDocuments(DocumentModelDocx docxTemplatorModels)
+        public static byte[] MergedDocuments(DocumentModelDocx docxTemplatorModels)
         {
             using (MemoryStream docxStream = new())//Поток для итогового документа
             {
@@ -91,7 +91,7 @@
         /// Создание раздельных документов, т.е. на каждого студента свои docx файл
         /// </summary>
         /// <returns></returns>
-        public byte[] SeparateDocuments(DocumentModelDocx docxTemplatorModels)
+        public static byte[] SeparateDocuments(DocumentModelDocx docxTemplatorModels)
         {
             using (MemoryStream zipStream = new())//Поток для итогового документа
             {
