@@ -82,8 +82,6 @@ namespace OpenXmlTemplator.Tests
 
             DocumentModelDocx model = new(inStream: readStream, documents: [("we", keyWords1), ("are", keyWords2), ("the", keyWords3)], searchModel: searchModel);
 
-            CreatingDocumentDocx creatingDocument = new();
-
             string resultsDirectory = Path.Combine(Directory.GetCurrentDirectory(), "DocxTestResults");
 
             if (!Directory.Exists(resultsDirectory))
@@ -93,13 +91,13 @@ namespace OpenXmlTemplator.Tests
 
             using FileStream writeStreamMerged = new(Path.Combine(resultsDirectory, "TestReplaceMergedResult.docx"), FileMode.OpenOrCreate);
 
-            writeStreamMerged.Write(creatingDocument.MergedDocuments(docxTemplatorModels: model));
+            writeStreamMerged.Write(CreatingDocumentDocx.MergedDocuments(docxTemplatorModels: model));
 
             model.InStream.Seek(0, SeekOrigin.Begin);
 
             using FileStream writeStreamSeparate = new(Path.Combine(resultsDirectory, "TestReplaceSeparateResult.zip"), FileMode.OpenOrCreate);
 
-            writeStreamSeparate.Write(creatingDocument.SeparateDocuments(docxTemplatorModels: model));
+            writeStreamSeparate.Write(CreatingDocumentDocx.SeparateDocuments(docxTemplatorModels: model));
         }
 
         [Fact]
@@ -146,8 +144,6 @@ namespace OpenXmlTemplator.Tests
 
             DocumentModelDocx model = new(inStream: readStream, keyWords: keyWords, searchModel: searchModel);
 
-            CreatingDocumentDocx creatingDocument = new();
-
             string resultsDirectory = Path.Combine(Directory.GetCurrentDirectory(), "DocxTestResults");
 
             if (!Directory.Exists(resultsDirectory))
@@ -157,7 +153,7 @@ namespace OpenXmlTemplator.Tests
 
             using FileStream writeStreamMerged = new(Path.Combine(resultsDirectory, "TestInsertParagraphResult.docx"), FileMode.OpenOrCreate);
 
-            writeStreamMerged.Write(creatingDocument.MergedDocuments(docxTemplatorModels: model));
+            writeStreamMerged.Write(CreatingDocumentDocx.MergedDocuments(docxTemplatorModels: model));
         }
 
         [Fact]
@@ -298,8 +294,6 @@ namespace OpenXmlTemplator.Tests
 
             DocumentModelDocx model = new(inStream: readStream, keyWords: keyWords, searchModel: searchModel);
 
-            CreatingDocumentDocx creatingDocument = new();
-
             string resultsDirectory = Path.Combine(Directory.GetCurrentDirectory(), "DocxTestResults");
 
             if (!Directory.Exists(resultsDirectory))
@@ -309,7 +303,7 @@ namespace OpenXmlTemplator.Tests
 
             using FileStream writeStreamMerged = new(Path.Combine(resultsDirectory, "TestTableResult.docx"), FileMode.OpenOrCreate);
 
-            writeStreamMerged.Write(creatingDocument.MergedDocuments(docxTemplatorModels: model));
+            writeStreamMerged.Write(CreatingDocumentDocx.MergedDocuments(docxTemplatorModels: model));
         }
     }
 }
