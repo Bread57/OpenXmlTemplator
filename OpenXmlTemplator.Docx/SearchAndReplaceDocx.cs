@@ -16,8 +16,8 @@ namespace OpenXmlTemplator.Docx
         /// <param name="keyWordsHandler">Коллекции ключевых слов для замены</param>
         /// <param name="element">Элемент, дочерние узлы которого будет перебирать</param>
         /// <param name="search">Состояние поиска</param>
-        /// <param name="toRemove">элементы, которые будут удаленны в конце</param>
-        internal static void RecursiveSearch(XElement element, KeyWordsHandlerModelDocx keyWordsHandler, SearchingKeyWordModelDocx search, ICollection<XElement> toRemove)
+        /// <param name="toDelayedRemove">элементы, которые будут удаленны в конце работы шаблонизатора</param>//Если удалить элемент, в котором сейчас идет поиск, тогда по возвращению к нему не будет указателя на следующий элемент и цикл оборвется, а значит не весь документ будет пройден
+        internal static void RecursiveSearch(XElement element, KeyWordsHandlerModelDocx keyWordsHandler, SearchingKeyWordModelDocx search, ICollection<XElement> toDelayedRemove)
         {
             foreach (XElement child in element.Elements())
             {
@@ -42,7 +42,7 @@ namespace OpenXmlTemplator.Docx
                                     //Получаем отдельно ключевое слово
                                     string keyWord = keyWordParams[0];
 
-                                    keyWordParams = keyWordParams.Skip(1).ToArray();
+                                    keyWordParams = keyWordParams[1..];
 
                                     if (keyWordsHandler.TableKeyWords.TryGetValue(keyWord, out IEnumerable<KeyWordsHandlerModelDocx>? rows))//Проверка на замену таблицы
                                     {
@@ -52,23 +52,17 @@ namespace OpenXmlTemplator.Docx
 
                                             //Получаем строку-обозначение таблицы
                                             XElement tableSignTr = FindParentByXName(child: child, xName: XNamesDocx.TR) ?? throw new InvalidDataException($"Не найден родительский w:tr блок-обозначение. Ключевое слово - {keyWord ?? "is null"}");
-                                            toRemove.Add(tableSignTr);//Добавляем строку-обозначение в список для итогового удаления
+                                            toDelayedRemove.Add(tableSignTr);//Добавляем строку-обозначение в список для отложеного удаления
 
                                             //Получаем список строк-шаблонов, идущих после строки-обозначения таблицы
                                             //Обязательно Вызывакм To(Array/List и т.д.) для кэширования результата запроса, т.к. иначе изменения древа xml(вставки новых элементов) будут отражаться на этой коллекции, если оставим Ienumerable
-                                            XElement[] trTemplates = tableSignTr.ElementsAfterSelf().Take(tempateRowCount).ToArray() ?? throw new NullReferenceException($"Не найдено шаблон-строка таблицы. Ключевое слово - {keyWord ?? "is null"}");
-
-                                            //Берем первую строку шаблон для вставки новыз элементов перед ней
-                                            XElement insertBefore = trTemplates.FirstOrDefault() ?? throw new InvalidDataException($"Не указаны шаблоны строк в таблице. Ключевое слово - {keyWord ?? " is null"}");
-
-                                            //Добавляем шаблоны с писок на удаление
-                                            foreach (XElement templateRow in trTemplates)
-                                            {
-                                                toRemove.Add(templateRow);
-                                            }
+                                            XElement[] trTemplates = tableSignTr.ElementsAfterSelf().Where(e => e.Name == XNamesDocx.TR).Take(tempateRowCount).ToArray() ?? throw new NullReferenceException($"Не найдено шаблон-строка таблицы. Ключевое слово - {keyWord ?? "is null"}");
 
                                             if (rows is not null)
                                             {
+                                                //Берем первую строку шаблон для вставки новых элементов перед ней
+                                                XElement insertBefore = trTemplates.FirstOrDefault() ?? throw new InvalidDataException($"Не указаны шаблоны строк в таблице. Ключевое слово - {keyWord ?? " is null"}");
+
                                                 foreach (KeyWordsHandlerModelDocx rowHandler in rows)
                                                 {
                                                     foreach (XElement templateRow in trTemplates)
@@ -76,9 +70,13 @@ namespace OpenXmlTemplator.Docx
                                                         XElement row = new(templateRow);
                                                         insertBefore.AddBeforeSelf(row);
 
-                                                        RecursiveSearch(keyWordsHandler: rowHandler, element: row, search: new SearchingKeyWordModelDocx(searchToCopy: search), toRemove: toRemove);//Вызываем рекурсивный поиск внутри строки таблицы, SearchKeyWord задаем новое
+                                                        RecursiveSearch(keyWordsHandler: rowHandler, element: row, search: new SearchingKeyWordModelDocx(searchToCopy: search), toDelayedRemove: toDelayedRemove);//Вызываем рекурсивный поиск внутри строки таблицы, SearchKeyWord задаем новое
                                                     }
                                                 }
+                                            }
+                                            foreach (XElement templateRow in trTemplates)
+                                            {
+                                                templateRow.Remove();
                                             }
                                         }
                                         catch (FormatException ex)
@@ -103,7 +101,7 @@ namespace OpenXmlTemplator.Docx
                                             paragraph.AddBeforeSelf(newParagraph);//вставляем новый элемент
                                         }
 
-                                        toRemove.Add(paragraph);//удаляем параграф-обозначнение
+                                        toDelayedRemove.Add(paragraph);//удаляем параграф-обозначнение
                                     }
                                     else
                                     {
@@ -162,7 +160,7 @@ namespace OpenXmlTemplator.Docx
                 if (child.HasElements)//если есть дочерние элементы
                 {
                     //Продолжаем обход древа
-                    RecursiveSearch(element: child, keyWordsHandler: keyWordsHandler, search: search, toRemove: toRemove);
+                    RecursiveSearch(element: child, keyWordsHandler: keyWordsHandler, search: search, toDelayedRemove: toDelayedRemove);
                 }
             }
         }

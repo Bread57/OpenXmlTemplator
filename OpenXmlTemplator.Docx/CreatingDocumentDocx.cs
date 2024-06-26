@@ -48,7 +48,7 @@
                             //Что бы шаблон всегда был по рукой - создаем копию newBody
                             XElement newBody = new(body);
 
-                            ICollection<XElement> toRemove = new Collection<XElement>();
+                            ICollection<XElement> toDelayedRemove = new Collection<XElement>();
 
                             //Рекурсивный поиск по document.xml
                             foreach (var element in newBody.Elements())
@@ -57,12 +57,12 @@
                                     element: element,
                                     keyWordsHandler: keyWords,
                                     search: new SearchingKeyWordModelDocx(docxTemplatorModels.SearchModel),
-                                    toRemove: toRemove
+                                    toDelayedRemove: toDelayedRemove
                                     );
                             }
 
                             //Удаляем лишние элементы
-                            foreach (XElement element in toRemove)
+                            foreach (XElement element in toDelayedRemove)
                             {
                                 element.Remove();
                             }
@@ -79,8 +79,7 @@
                         //после записи всех newBody - удаляем шаблонный body из файла
                         body.Remove();
 
-                        documentXmlStream.Seek(0, SeekOrigin.Begin);//Что бы документ заменялся, а не просто сохранился в конце имеющегося
-                        document.Save(documentXmlStream);
+                        DocumentSave(documentXmlStream: documentXmlStream, document: document);
                     }
                 }
                 return docxStream.ToArray();
@@ -122,7 +121,7 @@
 
                                     XElement body = document.Root!.Element(XNamesDocx.Body) ?? throw new FileNotFoundException("В XML файле отсутствует элемент <body>.");
 
-                                    ICollection<XElement> toRemove = new Collection<XElement>();
+                                    ICollection<XElement> toDelayedRemove = new Collection<XElement>();
 
                                     //Рекурсивный поиск по document.xml
                                     foreach (var element in body.Elements())
@@ -131,18 +130,17 @@
                                             element: element,
                                             keyWordsHandler: keyWords,
                                             search: new SearchingKeyWordModelDocx(docxTemplatorModels.SearchModel),
-                                            toRemove: toRemove
+                                            toDelayedRemove: toDelayedRemove
                                             );
                                     }
 
                                     //Удаляем лишние элементы
-                                    foreach (XElement element in toRemove)
+                                    foreach (XElement element in toDelayedRemove)
                                     {
                                         element.Remove();
                                     }
 
-                                    documentXmlStream.Seek(0, SeekOrigin.Begin);//Что бы документ заменялся, а не просто сохранился в конце имеющегося
-                                    document.Save(documentXmlStream);
+                                    DocumentSave(documentXmlStream: documentXmlStream, document: document);
                                 }
                             }
 
@@ -161,6 +159,25 @@
                     }
                 }
                 return zipStream.ToArray();//Важно вернуть после закрытия ZipArchive, т.к. только после этого, архив запишетсяя в поток zipStream
+            }
+        }
+
+        /// <summary>
+        /// Сохранение документа в поток
+        /// </summary>
+        /// <param name="documentXmlStream">Поток</param>
+        /// <param name="document">Документ</param>
+        private static void DocumentSave(Stream documentXmlStream, XDocument document)
+        {
+            long oldStreamLength = documentXmlStream.Length;//Размера шаблона
+
+            documentXmlStream.Seek(0, SeekOrigin.Begin);//Что бы документ заменялся, а не просто сохранился в конце имеющегося
+            document.Save(documentXmlStream);
+
+            //Если позиция в потоке после сохранения файла меньше изначальной длины потока - поток нужно урезать, что бы в итоговом файле не попали элементы шаблона
+            if (oldStreamLength > documentXmlStream.Position)
+            {
+                documentXmlStream.SetLength(documentXmlStream.Position);
             }
         }
     }
