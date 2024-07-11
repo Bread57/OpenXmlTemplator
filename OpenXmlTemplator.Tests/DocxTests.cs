@@ -166,7 +166,7 @@ namespace OpenXmlTemplator.Tests
                 Directory.CreateDirectory(templatesDirectory);
             }
 
-            using FileStream readStream = new(Path.Combine(templatesDirectory, "TestTable.docx"), FileMode.Open);
+            using FileStream readStream = new(Path.Combine(templatesDirectory, "TestTable.docx"), FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 
             KeyWordsHandlerModelDocx keyWords = new(keyWordHandlerNotFoundMessage: "Not found")
             {
@@ -194,7 +194,6 @@ namespace OpenXmlTemplator.Tests
                                 KeyWordsToReplace = new Dictionary<string, string>
                                 {
                                     //1 row
-                                    { "1","NONINFRINGEMENT"},
                                     { "2","IN"},
                                     { "3","NO"},
                                     { "4","EVENT"},
@@ -203,7 +202,6 @@ namespace OpenXmlTemplator.Tests
                                     { "7","AUTHORS"},
 
                                     //2 row
-                                    { "8","8888888888"},
                                     { "9","999999999"},
                                     { "10","1010101001"},
                                     { "11","1111111111111"},
@@ -212,7 +210,6 @@ namespace OpenXmlTemplator.Tests
                                     { "14","14141414114141414414"},
 
                                     //3 row
-                                    { "a","aaaaaaaaaaaaaaa"},
                                     { "u","uuuuuuuuu"},
                                     { "h","hhhhhhhh"},
                                     { "l","iiiiiii"},
@@ -226,7 +223,6 @@ namespace OpenXmlTemplator.Tests
                                 KeyWordsToReplace = new Dictionary<string, string>
                                 {
                                     //1 row
-                                    { "1","OR"},
                                     { "2","COPYRIGHT"},
                                     { "3","HOLDERS"},
                                     { "4","BE"},
@@ -235,7 +231,6 @@ namespace OpenXmlTemplator.Tests
                                     { "7","ANY"},
 
                                     //2 row
-                                    { "8","+8888888888"},
                                     { "9","+999999999"},
                                     { "10","+1010101001"},
                                     { "11","+1111111111111"},
@@ -244,7 +239,6 @@ namespace OpenXmlTemplator.Tests
                                     { "14","+14141414114141414414"},
 
                                     //3 row
-                                    { "a","*aaaaaaaaaaaaaaa"},
                                     { "u","*uuuuuuuuu"},
                                     { "h","*hhhhhhhh"},
                                     { "l","*iiiiiii"},
@@ -258,7 +252,6 @@ namespace OpenXmlTemplator.Tests
                                 KeyWordsToReplace = new Dictionary<string, string>
                                 {
                                     //1 row
-                                    { "1","CLAIM"},
                                     { "2","DAMAGES"},
                                     { "3","OR"},
                                     { "4","OTHER "},
@@ -267,7 +260,6 @@ namespace OpenXmlTemplator.Tests
                                     { "7","$%^&"},
 
                                      //2 row
-                                    { "8","-8888888888"},
                                     { "9","-999999999"},
                                     { "10","-1010101001"},
                                     { "11","-1111111111111"},
@@ -276,7 +268,6 @@ namespace OpenXmlTemplator.Tests
                                     { "14","-14141414114141414414"},
 
                                     //3 row
-                                    { "a","%aaaaaaaaaaaaaaa"},
                                     { "u","%uuuuuuuuu"},
                                     { "h","%hhhhhhhh"},
                                     { "l","%iiiiiii"},
@@ -292,7 +283,16 @@ namespace OpenXmlTemplator.Tests
 
             SearchModelDocx searchModel = new(startingKeys: ['[', '#'], endingKeys: ['#', ']']);
 
-            DocumentModelDocx model = new(inStream: readStream, keyWords: keyWords, searchModel: searchModel);
+            DocumentModelDocx model = new(inStream: readStream, keyWords: keyWords, searchModel: searchModel)
+            {
+                BuiltInKeyWordsHandlers = new BuiltInKeyWordsHandlersDocx
+                {
+                    TableRowCounter_Sign = "№",
+                    TableRowCounter_ResetByTemplateList = false,
+                    TableRowCounter_UseWords = true,
+                    TableRowCounter_WordsCulture = new System.Globalization.CultureInfo("en-US")
+                }
+            };
 
             string resultsDirectory = Path.Combine(Directory.GetCurrentDirectory(), "DocxTestResults");
 
