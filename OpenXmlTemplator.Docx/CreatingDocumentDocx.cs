@@ -57,6 +57,7 @@
                                     element: element,
                                     keyWordsHandler: keyWords,
                                     search: new SearchingKeyWordModelDocx(docxTemplatorModels.SearchModel),
+                                    builtInKeyWordsHandlers: docxTemplatorModels.BuiltInKeyWordsHandlers,
                                     toDelayedRemove: toDelayedRemove
                                     );
                             }
@@ -130,6 +131,7 @@
                                             element: element,
                                             keyWordsHandler: keyWords,
                                             search: new SearchingKeyWordModelDocx(docxTemplatorModels.SearchModel),
+                                            builtInKeyWordsHandlers: docxTemplatorModels.BuiltInKeyWordsHandlers,
                                             toDelayedRemove: toDelayedRemove
                                             );
                                     }

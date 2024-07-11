@@ -22,6 +22,11 @@
         /// </summary>
         public SearchModelDocx SearchModel { get; }
 
+        /// <summary>
+        /// Настройки встроенных обработчиков ключевых слов, могу совпадать с пользовательскими, но имеют приоритет ниже
+        /// </summary>
+        public BuiltInKeyWordsHandlersDocx BuiltInKeyWordsHandlers { get; init; } = new BuiltInKeyWordsHandlersDocx();
+
         private DocumentModelDocx(SearchModelDocx searchModel)
         {
             SearchModel = searchModel;

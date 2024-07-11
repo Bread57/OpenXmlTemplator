@@ -1,4 +1,5 @@
-﻿using OpenXmlTemplator.Docx.Auxiliary;
+﻿using Humanizer;
+using OpenXmlTemplator.Docx.Auxiliary;
 using OpenXmlTemplator.Docx.Models.InnerModels;
 using OpenXmlTemplator.Docx.Models.OuterModels;
 using System.Xml.Linq;
@@ -17,7 +18,7 @@ namespace OpenXmlTemplator.Docx
         /// <param name="element">Элемент, дочерние узлы которого будет перебирать</param>
         /// <param name="search">Состояние поиска</param>
         /// <param name="toDelayedRemove">элементы, которые будут удаленны в конце работы шаблонизатора</param>//Если удалить элемент, в котором сейчас идет поиск, тогда по возвращению к нему не будет указателя на следующий элемент и цикл оборвется, а значит не весь документ будет пройден
-        internal static void RecursiveSearch(XElement element, KeyWordsHandlerModelDocx keyWordsHandler, SearchingKeyWordModelDocx search, ICollection<XElement> toDelayedRemove)
+        internal static void RecursiveSearch(XElement element, KeyWordsHandlerModelDocx keyWordsHandler, SearchingKeyWordModelDocx search, BuiltInKeyWordsHandlersDocx builtInKeyWordsHandlers, ICollection<XElement> toDelayedRemove)
         {
             foreach (XElement child in element.Elements())
             {
@@ -51,28 +52,47 @@ namespace OpenXmlTemplator.Docx
                                             int tempateRowCount = keyWordParams.Length != 0 ? Convert.ToInt32(keyWordParams[0]) : 1;//если не указано число строк-шаблонов, считаем что строка одна
 
                                             //Получаем строку-обозначение таблицы
-                                            XElement tableSignTr = FindParentByXName(child: child, xName: XNamesDocx.TR) ?? throw new InvalidDataException($"Не найден родительский w:tr блок-обозначение. Ключевое слово - {keyWord ?? "is null"}");
+                                            XElement tableSignTr = FindParentByXName(child: child, xName: XNamesDocx.TR) ?? throw new InvalidDataException($"Не найден родительский w:tr блок-обозначение. Ключевое слово - {keyWord}");
                                             toDelayedRemove.Add(tableSignTr);//Добавляем строку-обозначение в список для отложеного удаления
 
                                             //Получаем список строк-шаблонов, идущих после строки-обозначения таблицы
                                             //Обязательно Вызывакм To(Array/List и т.д.) для кэширования результата запроса, т.к. иначе изменения древа xml(вставки новых элементов) будут отражаться на этой коллекции, если оставим Ienumerable
-                                            XElement[] trTemplates = tableSignTr.ElementsAfterSelf().Where(e => e.Name == XNamesDocx.TR).Take(tempateRowCount).ToArray() ?? throw new NullReferenceException($"Не найдено шаблон-строка таблицы. Ключевое слово - {keyWord ?? "is null"}");
+                                            XElement[] trTemplates = tableSignTr.ElementsAfterSelf().Where(e => e.Name == XNamesDocx.TR).Take(tempateRowCount).ToArray() ?? throw new NullReferenceException($"Не найдена шаблон-строка таблицы. Ключевое слово - {keyWord}");
 
                                             if (rows is not null)
                                             {
                                                 //Берем первую строку шаблон для вставки новых элементов перед ней
-                                                XElement insertBefore = trTemplates.FirstOrDefault() ?? throw new InvalidDataException($"Не указаны шаблоны строк в таблице. Ключевое слово - {keyWord ?? " is null"}");
+                                                XElement insertBefore = trTemplates.FirstOrDefault() ?? throw new InvalidDataException($"Не указаны шаблоны-строк в таблице. Ключевое слово - {keyWord}");
+
+                                                //Записываем номер строки, переданный от родительского класса
+                                                int oldTableRowCount = builtInKeyWordsHandlers.TableRowCounter_CurrentValue;
+                                                //Ставим для счетчика стартовое значение
+                                                builtInKeyWordsHandlers.TableRowCounter_CurrentValue = builtInKeyWordsHandlers.TableRowCounter_StartValue;
 
                                                 foreach (KeyWordsHandlerModelDocx rowHandler in rows)
                                                 {
+                                                    //Если необходимо сбрасывать счетчик для каждого набора шаблонов
+                                                    if (builtInKeyWordsHandlers.TableRowCounter_ResetByTemplateList)
+                                                    {
+                                                        builtInKeyWordsHandlers.TableRowCounter_CurrentValue = builtInKeyWordsHandlers.TableRowCounter_StartValue;
+                                                    }
+
                                                     foreach (XElement templateRow in trTemplates)
                                                     {
                                                         XElement row = new(templateRow);
                                                         insertBefore.AddBeforeSelf(row);
 
-                                                        RecursiveSearch(keyWordsHandler: rowHandler, element: row, search: new SearchingKeyWordModelDocx(searchToCopy: search), toDelayedRemove: toDelayedRemove);//Вызываем рекурсивный поиск внутри строки таблицы, SearchKeyWord задаем новое
+                                                        RecursiveSearch(
+                                                            keyWordsHandler: rowHandler,
+                                                            element: row,
+                                                            search: new SearchingKeyWordModelDocx(searchToCopy: search),
+                                                            builtInKeyWordsHandlers: builtInKeyWordsHandlers,
+                                                            toDelayedRemove: toDelayedRemove);//Вызываем рекурсивный поиск внутри строки таблицы, SearchKeyWord задаем новое
                                                     }
                                                 }
+
+                                                //Возвращаем старое значение счетчика, для продолжения в родительсеой таблице
+                                                builtInKeyWordsHandlers.TableRowCounter_CurrentValue = oldTableRowCount;
                                             }
                                             foreach (XElement templateRow in trTemplates)
                                             {
@@ -87,11 +107,11 @@ namespace OpenXmlTemplator.Docx
                                     else if (keyWordsHandler.KeyWordsToInsert.TryGetValue(keyWord, out IEnumerable<string>? data))//Проверка на множественные замены
                                     {
                                         //Получем строку и ее стиль
-                                        XElement run = FindParentByXName(child: child, xName: XNamesDocx.R) ?? throw new InvalidDataException($"Не найден родительский w:r блок. Ключевое слово - {keyWord ?? "is null"}");
+                                        XElement run = FindParentByXName(child: child, xName: XNamesDocx.R) ?? throw new InvalidDataException($"Не найден родительский w:r блок. Ключевое слово - {keyWord}");
                                         XElement? rStyle = run.Element(XNamesDocx.rPr);
 
                                         //Получаем параграф-обозначение и его стиль
-                                        XElement paragraph = FindParentByXName(child: run, xName: XNamesDocx.P) ?? throw new InvalidDataException($"Не найден родительский w:p блок. Ключевое слово - {keyWord ?? "is null"}"); ;
+                                        XElement paragraph = FindParentByXName(child: run, xName: XNamesDocx.P) ?? throw new InvalidDataException($"Не найден родительский w:p блок. Ключевое слово - {keyWord}"); ;
                                         XElement? pStyle = paragraph.Element(XNamesDocx.pPr);
 
                                         foreach (string text in data)
@@ -101,7 +121,7 @@ namespace OpenXmlTemplator.Docx
                                             paragraph.AddBeforeSelf(newParagraph);//вставляем новый элемент
                                         }
 
-                                        toDelayedRemove.Add(paragraph);//удаляем параграф-обозначнение
+                                        toDelayedRemove.Add(paragraph);//удаляем параграф-обозначение
                                     }
                                     else
                                     {
@@ -118,10 +138,21 @@ namespace OpenXmlTemplator.Docx
                                                 replaceValue = ApplyingParameters(search.AdditionalParameters, replaceValue, keyWordParams);
                                             }
                                         }
-                                        else//Если для ключевого слова нет обработчика - оставляем предупреждение на его месте
+                                        else//Если пользователь не указал обработчик для ключевого слова
                                         {
-                                            //Вставляем значение в индекс ключевого слова
-                                            replaceValue = $"{keyWordsHandler.KeyWordHandlerNotFoundMessage}: {keyWord}";
+                                            //Проверяем встроенные обработчики
+                                            if (keyWord == builtInKeyWordsHandlers.TableRowCounter_Sign)//Счетчик строк в таблице
+                                            {
+                                                replaceValue = $"{(builtInKeyWordsHandlers.TableRowCounter_UseWords
+                                                    ? builtInKeyWordsHandlers.TableRowCounter_CurrentValue.ToOrdinalWords(builtInKeyWordsHandlers.TableRowCounter_WordsCulture).Titleize()
+                                                    : builtInKeyWordsHandlers.TableRowCounter_CurrentValue)}";
+
+                                                builtInKeyWordsHandlers.TableRowCounter_CurrentValue++;
+                                            }
+                                            else// Если для ключевого слова нет обработчика - оставляем предупреждение на его месте
+                                            {
+                                                replaceValue = $"{keyWordsHandler.KeyWordHandlerNotFoundMessage}: {keyWord}";
+                                            }
                                         }
 
                                         //Вставляем значение в индекс ключевого слова
@@ -160,7 +191,12 @@ namespace OpenXmlTemplator.Docx
                 if (child.HasElements)//если есть дочерние элементы
                 {
                     //Продолжаем обход древа
-                    RecursiveSearch(element: child, keyWordsHandler: keyWordsHandler, search: search, toDelayedRemove: toDelayedRemove);
+                    RecursiveSearch(
+                        element: child,
+                        keyWordsHandler: keyWordsHandler,
+                        search: search,
+                        builtInKeyWordsHandlers: builtInKeyWordsHandlers,
+                        toDelayedRemove: toDelayedRemove);
                 }
             }
         }
