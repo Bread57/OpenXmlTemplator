@@ -9,17 +9,19 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<Version>1.1.0</Version>
+		<Version>1.1.1</Version>
 
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		
+
 		<Title>OpenXmlTemplator.Docx</Title>
 		<PackageId>OpenXmlTemplator.Docx</PackageId>
 		<PackageDescription>Templator for docx, more details at GitHub</PackageDescription>
 		<RepositoryUrl>https://github.com/Bread57/OpenXmlTemplator</RepositoryUrl>
 	</PropertyGroup>
-
+	<PropertyGroup>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+	</PropertyGroup>
 	<ItemGroup>
-	  <PackageReference Include="Humanizer" Version="2.14.1" />
+		<PackageReference Include="Humanizer" Version="2.14.1" />
 	</ItemGroup>
 </Project>
