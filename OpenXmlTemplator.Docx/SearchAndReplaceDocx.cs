@@ -1,8 +1,8 @@
-﻿using Humanizer;
+﻿using System.Xml.Linq;
+using Humanizer;
 using OpenXmlTemplator.Docx.Auxiliary;
 using OpenXmlTemplator.Docx.Models.InnerModels;
 using OpenXmlTemplator.Docx.Models.OuterModels;
-using System.Xml.Linq;
 
 namespace OpenXmlTemplator.Docx
 {
