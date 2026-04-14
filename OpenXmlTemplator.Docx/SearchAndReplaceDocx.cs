@@ -1,15 +1,12 @@
 ﻿using System.Xml.Linq;
 using Humanizer;
-using OpenXmlTemplator.Docx.Auxiliary;
-using OpenXmlTemplator.Docx.Models.InnerModels;
-using OpenXmlTemplator.Docx.Models.OuterModels;
 
 namespace OpenXmlTemplator.Docx
 {
     /// <summary>
     /// Поиск и замена ключевых слов
     /// </summary>
-    internal class SearchAndReplaceDocx
+    internal sealed class SearchAndReplaceDocx
     {
         /// <summary>
         /// Рекурсивный перебор двера xml, для поиска и замены ключевых слов
@@ -22,6 +19,7 @@ namespace OpenXmlTemplator.Docx
         {
             foreach (XElement child in element.Elements())
             {
+                //Работа с текстом, таблицы и вставка параграфа
                 if (child.Name == XNamesDocx.T)
                 {
                     for (int i = 0; i < child.Value.Length; i++)
@@ -49,14 +47,14 @@ namespace OpenXmlTemplator.Docx
                                     {
                                         try
                                         {
-                                            int tempateRowCount = keyWordParams.Length != 0 ? Convert.ToInt32(keyWordParams[0]) : 1;//если не указано число строк-шаблонов, считаем что строка одна
+                                            int tempateRowCount = keyWordParams.Length != 0 && int.TryParse(keyWordParams[0], out int count) ? count : 1;//если не указано число строк-шаблонов, считаем что строка одна
 
                                             //Получаем строку-обозначение таблицы
                                             XElement tableSignTr = FindParentByXName(child: child, xName: XNamesDocx.TR) ?? throw new InvalidDataException($"Не найден родительский w:tr блок-обозначение. Ключевое слово - {keyWord}");
                                             toDelayedRemove.Add(tableSignTr);//Добавляем строку-обозначение в список для отложеного удаления
 
                                             //Получаем список строк-шаблонов, идущих после строки-обозначения таблицы
-                                            //Обязательно Вызывакм To(Array/List и т.д.) для кэширования результата запроса, т.к. иначе изменения древа xml(вставки новых элементов) будут отражаться на этой коллекции, если оставим Ienumerable
+                                            //Обязательно вызываем To(Array/List и т.д.) для кэширования результата запроса, т.к. иначе изменения древа xml(вставки новых элементов) будут отражаться на этой коллекции, если оставим Ienumerable
                                             XElement[] trTemplates = tableSignTr.ElementsAfterSelf().Where(e => e.Name == XNamesDocx.TR).Take(tempateRowCount).ToArray() ?? throw new NullReferenceException($"Не найдена шаблон-строка таблицы. Ключевое слово - {keyWord}");
 
                                             if (rows is not null)
@@ -77,6 +75,7 @@ namespace OpenXmlTemplator.Docx
                                                         builtInKeyWordsHandlers.TableRowCounter_CurrentValue = builtInKeyWordsHandlers.TableRowCounter_StartValue;
                                                     }
 
+                                                    //Вставляем строки в таблицу
                                                     foreach (XElement templateRow in trTemplates)
                                                     {
                                                         XElement row = new(templateRow);
@@ -91,7 +90,7 @@ namespace OpenXmlTemplator.Docx
                                                     }
                                                 }
 
-                                                //Возвращаем старое значение счетчика, для продолжения в родительсеой таблице
+                                                //Возвращаем старое значение счетчика, для продолжения в родительской таблице
                                                 builtInKeyWordsHandlers.TableRowCounter_CurrentValue = oldTableRowCount;
                                             }
                                             foreach (XElement templateRow in trTemplates)
@@ -174,7 +173,7 @@ namespace OpenXmlTemplator.Docx
                         }
                         else
                         {
-                            //Смотри, является ли символ стартовым ключем
+                            //Смотри, является ли символ стартовым ключом
                             search.IsPartOfStartingKeys(symbol: symbol, index: i);
                         }
                     }
@@ -185,6 +184,83 @@ namespace OpenXmlTemplator.Docx
                         //Удаляем все символы, начиная с ключевых и до конца блока текста
                         child.Value = child.Value.Remove(search.StartIndex);
                         search.StartIndex = 0;
+                    }
+                }
+                //Первый этап замены картинки
+                else if (child.Name == XNamesDocx.docPr)
+                {
+                    XAttribute? descr = child.Attributes().FirstOrDefault(a => a.Name == XNamesDocx.docPrDescr);
+
+                    if (descr?.Value is not null)
+                    {
+                        for (int i = 0; i < descr.Value.Length; i++)
+                        {
+                            char symbol = descr.Value[i];
+
+                            //Если набрались стартовые ключи
+                            if (search.HasAllStartingKeys)
+                            {
+                                //если символ входит в последовательность конечных ключей
+                                if (search.IsPartOfEndingKeys(symbol: symbol))
+                                {
+                                    //Проверяем, все ли конечные ключи найдены
+                                    if (search.HasAllEndingKeys)
+                                    {
+                                        //Если мы составили ключевое слово - продолжаем поиск по элементам
+                                        //Далее нам нужен a:blip, где мы подкинем Id
+                                        //Тут ни в коем случае нельзя ставить  search.Reset();!!!
+                                        //Нам нужно сохранить ключевое слово для a:blip, там его и сбросим
+                                        continue;
+                                    }
+                                }
+                                else
+                                {
+                                    //Добавляем символ в ключевое слово
+                                    search.KeyWord.Append(symbol);
+                                }
+                            }
+                            else
+                            {
+                                //Смотри, является ли символ стартовым ключом
+                                search.IsPartOfStartingKeys(symbol: symbol, index: i);
+                            }
+                        }
+                    }
+                }
+                //Второй этап замены картинки
+                else if (child.Name == XNamesDocx.Blip)
+                {
+                    XAttribute? embed = child.Attributes().FirstOrDefault(a => a.Name == XNamesDocx.BlipEmbed);
+
+                    //Обрабатываем только если ключевое слово есть, иначе просто игнорим, на итоговом документе это не сложно заметить
+                    if (search.HasAllEndingKeys)
+                    {
+                        //Проверяем есть у нас такой ключ и fileId
+                        if (keyWordsHandler.KeyWordsToFileWordId.TryGetValue(search.KeyWord.ToString(), out string? fileId))
+                        {
+                            if (embed is null)
+                            {
+                                embed = new XAttribute(XNamesDocx.BlipEmbed, fileId);
+                            }
+                            else
+                            {
+                                //старый Id записываем, дял дальнейшего удаления из файла document.xml.rels
+                                keyWordsHandler.FileReplaceIds.Add(embed.Value);
+
+                                //Заменяем Id на новый
+                                embed.SetValue(fileId);
+                            }
+                        }
+
+                        //Сбрасываем параметры, которые собрали еще на docPr
+                        search.Reset();
+                    }
+                    else if (embed is not null)
+                    {
+                        //Если файл не заменился - проверяем, вдруг такой id мы уже где то заменили
+                        //Если да - то нужно его убрать из списка на удаление из document.xml.rels(если он там был)
+                        //Ведь он у нас остается в документе
+                        keyWordsHandler.FileReplaceIds.Remove(embed.Value);
                     }
                 }
 
@@ -202,7 +278,7 @@ namespace OpenXmlTemplator.Docx
         }
 
         /// <summary>
-        /// Примененение параметров к замененному слову
+        /// Применение параметров к замененному слову
         /// </summary>
         /// <param name="additionalParameters"></param>
         /// <param name="replaceValue"></param>

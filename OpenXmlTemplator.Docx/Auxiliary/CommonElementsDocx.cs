@@ -1,7 +1,7 @@
-﻿namespace OpenXmlTemplator.Docx.Auxiliary
-{
-    using System.Xml.Linq;
+﻿using System.Xml.Linq;
 
+namespace OpenXmlTemplator.Docx
+{
     /// <summary>
     /// Стандартные элементы docx документа
     /// </summary>

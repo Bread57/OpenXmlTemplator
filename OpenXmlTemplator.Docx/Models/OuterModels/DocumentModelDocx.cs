@@ -1,11 +1,9 @@
-﻿namespace OpenXmlTemplator.Docx.Models.OuterModels
+﻿namespace OpenXmlTemplator.Docx
 {
-    using System.IO;
-
     /// <summary>
     /// Модель для формирования docx документа по шаблону
     /// </summary>
-    public class DocumentModelDocx
+    public sealed class DocumentModelDocx
     {
         /// <summary>
         /// Шаблон
@@ -13,7 +11,7 @@
         public Stream InStream { get; } = null!;
 
         /// <summary>
-        /// Спиоск параметров для каждого документа
+        /// Список параметров для каждого документа
         /// </summary>
         public IEnumerable<(string documentName, KeyWordsHandlerModelDocx keyWords)> Documents { get; } = [];
 
@@ -50,7 +48,7 @@
         }
 
         /// <summary>
-        /// Принимает коллекию наборов ключевых слов, вместо имен идут порядковые номера
+        /// Принимает коллекцию наборов ключевых слов, вместо имен идут порядковые номера
         /// </summary>
         /// <param name="inStream">Шаблон</param>
         /// <param name="keyWordsCollection">коллекия ключевых слов</param>
@@ -111,10 +109,10 @@
         }
 
         /// <summary>
-        /// Принимает коллекию наборов ключевых слов, вместо имен идут порядковые номера
+        /// Принимает коллекцию наборов ключевых слов, вместо имен идут порядковые номера
         /// </summary>
         /// <param name="data">Шаблон</param>
-        /// <param name="keyWordsCollection">коллекия ключевых слов</param>
+        /// <param name="keyWordsCollection">коллекция ключевых слов</param>
         /// <param name="searchModel">Модель для поиска</param>
         public DocumentModelDocx(byte[] data, IEnumerable<KeyWordsHandlerModelDocx> keyWordsCollection, SearchModelDocx searchModel) : this(data, searchModel)
         {

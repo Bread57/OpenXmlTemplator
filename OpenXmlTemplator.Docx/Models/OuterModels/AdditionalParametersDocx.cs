@@ -1,9 +1,9 @@
-﻿namespace OpenXmlTemplator.Docx.Models.OuterModels
+﻿namespace OpenXmlTemplator.Docx
 {
     /// <summary>
     /// Модель для передачи параметров с обработчиками, которые позволяют дополнительно поменять итоговое значение
     /// </summary>
-    public class AdditionalParametersDocx
+    public sealed class AdditionalParametersDocx
     {
         /// <summary>
         /// Отделяет ключевое слово от его параметров 
@@ -18,7 +18,13 @@
         /// <summary>
         /// (Key: Параметр,Value: обработчик), каждый делегат принимает на вход замененное ключевое слово и набор параметров для обработчки(в виде строки), возвращает обработанное слово
         /// </summary>
-        public Dictionary<string, Func<string, string, string>> Handlers { get; } = new Dictionary<string, Func<string, string, string>>(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, Func<string, string, string>> Handlers { get; } = new Dictionary<string, Func<string, string, string>>(capacity: 0, StringComparer.OrdinalIgnoreCase);
+
+        public AdditionalParametersDocx(string keyWordSeparator, string parameterSeparator)
+        {
+            KeyWordSeparator = keyWordSeparator;
+            ParameterSeparator = parameterSeparator;
+        }
 
         public AdditionalParametersDocx(string keyWordSeparator, string parameterSeparator, Dictionary<string, Func<string, string, string>> handlers)
         {

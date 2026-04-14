@@ -1,13 +1,11 @@
-﻿namespace OpenXmlTemplator.Docx.Models.InnerModels
-{
-    using System;
-    using System.Text;
-    using OpenXmlTemplator.Docx.Models.OuterModels;
+﻿using System.Text;
 
+namespace OpenXmlTemplator.Docx
+{
     /// <summary>
     /// Класс для поиска ключевых слов в разным элементах(узлах)
     /// </summary>
-    internal class SearchingKeyWordModelDocx
+    internal sealed class SearchingKeyWordModelDocx
     {
         /// <summary>
         /// Набор ключей для обозначения начала ключевого слова
@@ -16,7 +14,7 @@
         /// <summary>
         /// Найдены ли все ключи для начала ключевого слова
         /// </summary>
-        public bool HasAllStartingKeys { get; private set; } = false;
+        public bool HasAllStartingKeys { get; private set; }
 
         /// <summary>
         /// Набор ключей для обозначения окончания ключевого слова
@@ -25,7 +23,7 @@
         /// <summary>
         /// Найдены ли все ключи для окончания ключевого слова
         /// </summary>
-        public bool HasAllEndingKeys { get; private set; } = false;
+        public bool HasAllEndingKeys { get; private set; }
 
         /// <summary>
         /// Непосредственно ключевое слово
@@ -43,7 +41,7 @@
         internal int StartIndex { get; set; }
 
         /// <summary>
-        /// Принимет списки обозначении ключей
+        /// Принимает списки обозначении ключей
         /// </summary>
         /// <param name="startingKeys">список обозначении начала ключевого слова</param>
         /// <param name="endingKeys">Список обозначении окончания ключевого слова</param>

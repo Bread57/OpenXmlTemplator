@@ -1,15 +1,15 @@
 ﻿using System.Globalization;
 
-namespace OpenXmlTemplator.Docx.Models.OuterModels
+namespace OpenXmlTemplator.Docx
 {
     /// <summary>
     /// Настройки встроенных обработчиков ключевых слов, могу совпадать с пользовательскими, но имеют приоритет ниже
     /// </summary>
-    public class BuiltInKeyWordsHandlersDocx
+    public sealed class BuiltInKeyWordsHandlersDocx
     {
         #region Счетчик строк в таблицах
         /// <summary>
-        /// Обозначение счетчика строк в таблице
+        /// Обозначение счетчика строк в таблице(также должен находиться в ключевом слове, т.е. быть между набором символов)
         /// </summary>
         public string TableRowCounter_Sign { get; init; } = "№";
 
@@ -26,10 +26,10 @@ namespace OpenXmlTemplator.Docx.Models.OuterModels
         /// <summary>
         /// Нужно ли сбрасывать счетчик строк при завершении заполнения шаблонов-строк для каждого элемента таблицы(если true - 1,2,3,1,2,3 и т.д.)
         /// </summary>
-        public bool TableRowCounter_ResetByTemplateList { get; set; } = false;
+        public bool TableRowCounter_ResetByTemplateList { get; set; }
 
         /// <summary>
-        /// Использовать слова вместо цифо
+        /// Использовать слова вместо цифр
         /// </summary>
         public bool TableRowCounter_UseWords { get; set; }
 

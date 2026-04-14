@@ -1,22 +1,22 @@
-﻿namespace OpenXmlTemplator.Docx.Models.OuterModels
+﻿namespace OpenXmlTemplator.Docx
 {
     /// <summary>
     /// Модель, содержащая информацию для поиска ключевых слов
     /// </summary>
-    public class SearchModelDocx
+    public sealed class SearchModelDocx
     {
         /// <summary>
         /// Набор дополнительных параметров для обработки ключевых слов
         /// </summary>
-        public AdditionalParametersDocx AdditionalParameters { get; }
+        public AdditionalParametersDocx AdditionalParameters { get; } = new AdditionalParametersDocx(keyWordSeparator: "&", parameterSeparator: ":", []);
 
         /// <summary>
-        /// Набор ключей для обозначения начала ключевого слова
+        /// Набор ключей для обозначения начала ключевого слова, например ['[','#']
         /// </summary>
         public char[] StartingKeys { get; }
 
         /// <summary>
-        /// Набор ключей для обозначения окончания ключевого слова
+        /// Набор ключей для обозначения окончания ключевого слова, например ['#',']']
         /// </summary>
         public char[] EndingKeys { get; }
 
@@ -24,7 +24,6 @@
         {
             StartingKeys = startingKeys;
             EndingKeys = endingKeys;
-            AdditionalParameters = new AdditionalParametersDocx(keyWordSeparator: "&", parameterSeparator: ":", new Dictionary<string, Func<string, string, string>>(0));
         }
 
         public SearchModelDocx(char[] startingKeys, char[] endingKeys, AdditionalParametersDocx additionalParameters) : this(startingKeys: startingKeys, endingKeys: endingKeys)
