@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="README.md" />
+  </Folder>
+  <Project Path="OpenXmlTemplator.Docx/OpenXmlTemplator.Docx.csproj" />
+  <Project Path="OpenXmlTemplator.Tests/OpenXmlTemplator.Tests.csproj" />
+</Solution>
